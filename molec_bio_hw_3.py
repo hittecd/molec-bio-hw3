@@ -127,30 +127,31 @@ def compute_global_distance(s_seq_1, s_seq_2):
     seq_1 = ' ' + s_seq_1.seq_data
     seq_2 = ' ' + s_seq_2.seq_data
 
+    '''
     if len(seq_1) > len(seq_2):
         i = len(seq_1) - len(seq_2)
         seq_2 += (i * '-')
     elif len(seq_1) < len(seq_2):
         i = len(seq_2) - len(seq_1)
         seq_1 += (i * '-')
+    '''
 
-    length = len(seq_1)
-    matrix = numpy.zeros((length, length))
+    matrix = numpy.zeros((len(seq_2), len(seq_1)))
 
     i = 0
-    while i < length:
+    while i < len(seq_1):
         matrix[0][i] = i
         i += 1
 
     i = 0
-    while i < length:
+    while i < len(seq_2):
         matrix[i][0] = i
         i += 1
 
     i = 1
     j = 1
-    while i < length:
-        while j < length:
+    while i < len(seq_2):
+        while j < len(seq_1):
 
             # calc diagonal
             diagonal = matrix[i - 1][j - 1]
@@ -172,15 +173,15 @@ def compute_global_distance(s_seq_1, s_seq_2):
         i += 1
         j = 1
 
-    process_result(seq_1, seq_2, matrix, length)
+    process_result(seq_1, seq_2, matrix)
 
 
-def process_result(seq_1, seq_2, matrix, length):
+def process_result(seq_1, seq_2, matrix):
     align_1 = ""
     align_2 = ""
 
-    i = length - 1
-    j = length - 1
+    i = len(seq_2) - 1
+    j = len(seq_1) - 1
     while i > 0 and j > 0:
         u = matrix[i - 1][j]
         l = matrix[i][j - 1]
@@ -222,7 +223,7 @@ def print_result(align_1, align_2):
 
     i = 0
     while i < len(align_1):
-        if align_1[i] == align_2[i]:
+        if align_1[i] == align_2[i] and align_1[i] != '-':
             score += 1
             index_str += '|'
         else:
