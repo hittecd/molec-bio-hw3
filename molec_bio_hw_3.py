@@ -53,7 +53,7 @@
 import argparse
 import numpy
 
-WIDTH_CONST = 120
+WIDTH_CONST = 0
 
 sequence_list = []
 
@@ -69,8 +69,12 @@ class Sequence:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-F', '-f', '--file', type=file, help="fasta filename", required=True)
+    parser.add_argument('-W', '-w', '--width', type=int, help="width of output", default=60)
 
     args = parser.parse_args()
+
+    global WIDTH_CONST
+    WIDTH_CONST = args.width
 
     parse_file(args.file)
 
