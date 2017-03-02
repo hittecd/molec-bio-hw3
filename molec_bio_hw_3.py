@@ -52,6 +52,7 @@
 
 import argparse
 import numpy
+import time
 
 WIDTH_CONST = 0
 
@@ -142,16 +143,27 @@ def compute_global_distance(s_seq_1, s_seq_2):
     '''
 
     matrix = numpy.zeros((len(seq_2), len(seq_1)))
+    #we create a separate scoring matrix for use here
+    scoreMatrix = numpy.zeros((len(seq_2), len(seq_1)))
+
+    score = 0
+    match = 0
+    indel = 1
+    mismatch = 1
 
     i = 0
     while i < len(seq_1):
         matrix[0][i] = i
+        scoreMatrix[0][i] = i
         i += 1
 
     i = 0
     while i < len(seq_2):
         matrix[i][0] = i
+        scoreMatrix[i][0] = i
         i += 1
+   
+    #necessary to use two variables for the distance matrix here - if we tried to use just i, we end up with float indicies instead of integer indicies
 
     i = 1
     j = 1
@@ -159,25 +171,39 @@ def compute_global_distance(s_seq_1, s_seq_2):
         while j < len(seq_1):
 
             # calc diagonal
+            #if characters are aligned, we say its a match and give it a score of 0 so we can minimize it
+            #if characters arent aligned we say its a mismatch so that we increase the distance
             diagonal = matrix[i - 1][j - 1]
             if seq_1[j] != seq_2[i]:
                 diagonal += 1
-            else:
+                score = mismatch
+            elif seq_1[j] == seq_2[i]:
                 k = 4
+                score = match
 
+            #if its a match we will have a score of the diagonal plus 0 - again so we minimize it
+            #if its a mismatch, it will be score of the diagonal plus 1 - increasing the distance
+            diagScore = scoreMatrix[i - 1][j - 1] + score
             # calc top
+            #same concept for the top, only we specifically use indel here
             top = matrix[i - 1][j] + 1
-
+            topScore = scoreMatrix[i-1][j] + indel
+      
             # calc left
+            #same concept for the left, again only using indel here
             left = matrix[i][j - 1] + 1
+            leftScore = scoreMatrix[i][j-1] + indel
 
             matrix[i][j] = min(top, left, diagonal)
+            #like the matrix we had, we calculate the minmimum to minmize the distance and then put that value in for the matrix
+            scoreMatrix[i][j] = min(diagScore, topScore, leftScore)
 
             j += 1
 
         i += 1
         j = 1
 
+    print scoreMatrix
     process_result(seq_1, seq_2, matrix)
 
 
