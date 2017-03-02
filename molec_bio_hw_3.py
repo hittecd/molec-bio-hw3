@@ -238,11 +238,13 @@ def print_result(align_1, align_2):
 
         i += 1
 
+    if length > WIDTH_CONST:
+        print WIDTH_CONST * '='
+    else:
+        print length * '='
+
     printed = 0
     while printed + WIDTH_CONST < length:
-        if printed == 0:
-            print WIDTH_CONST * '='
-
         print align_1[printed : printed + WIDTH_CONST]
         print index_str[printed : printed + WIDTH_CONST]
         print align_2[printed : printed + WIDTH_CONST]
