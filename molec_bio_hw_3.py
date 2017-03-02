@@ -53,6 +53,7 @@
 import argparse
 import numpy
 
+WIDTH_CONST = 120
 
 sequence_list = []
 
@@ -109,7 +110,7 @@ def compute_global_distances():
     i = 0
     j = 1
 
-    while j <= len(sequence_list):
+    while j < len(sequence_list):
         seq_1 = sequence_list[i]
         seq_2 = sequence_list[j]
 
@@ -218,11 +219,13 @@ def process_result(seq_1, seq_2, matrix):
 
 
 def print_result(align_1, align_2):
+    length = len(align_1)
+
     index_str = ""
     score = 0
 
     i = 0
-    while i < len(align_1):
+    while i < length:
         if align_1[i] == align_2[i] and align_1[i] != '-':
             score += 1
             index_str += '|'
@@ -231,12 +234,23 @@ def print_result(align_1, align_2):
 
         i += 1
 
-    print align_1
-    print index_str
-    print align_2
-    print "{0}({1}/{2})".format(len(align_1) * '=', score, len(align_1))
-    print
+    printed = 0
+    while printed + WIDTH_CONST < length:
+        if printed == 0:
+            print WIDTH_CONST * '='
 
+        print align_1[printed : printed + WIDTH_CONST]
+        print index_str[printed : printed + WIDTH_CONST]
+        print align_2[printed : printed + WIDTH_CONST]
+        print WIDTH_CONST * '='
+
+        printed += WIDTH_CONST
+
+    print align_1[printed : length]
+    print index_str[printed : length]
+    print align_2[printed : length]
+    print "{0}({1}/{2})".format((length - printed) * '=', score, length)
+    print
 
 
 if __name__ == "__main__":
