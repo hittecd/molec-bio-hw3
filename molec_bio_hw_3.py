@@ -52,6 +52,8 @@
 
 import argparse
 import numpy
+import scipy
+from scipy import spatial
 import time
 
 WIDTH_CONST = 0
@@ -143,8 +145,6 @@ def compute_global_distance(s_seq_1, s_seq_2):
     '''
 
     matrix = numpy.zeros((len(seq_2), len(seq_1)))
-    #we create a separate scoring matrix for use here
-    scoreMatrix = numpy.zeros((len(seq_2), len(seq_1)))
 
     score = 0
     match = 0
@@ -154,17 +154,13 @@ def compute_global_distance(s_seq_1, s_seq_2):
     i = 0
     while i < len(seq_1):
         matrix[0][i] = i
-        scoreMatrix[0][i] = i
         i += 1
 
     i = 0
     while i < len(seq_2):
         matrix[i][0] = i
-        scoreMatrix[i][0] = i
         i += 1
    
-    #necessary to use two variables for the distance matrix here - if we tried to use just i, we end up with float indicies instead of integer indicies
-
     i = 1
     j = 1
     while i < len(seq_2):
@@ -176,34 +172,27 @@ def compute_global_distance(s_seq_1, s_seq_2):
             diagonal = matrix[i - 1][j - 1]
             if seq_1[j] != seq_2[i]:
                 diagonal += 1
-                score = mismatch
             elif seq_1[j] == seq_2[i]:
                 k = 4
-                score = match
 
             #if its a match we will have a score of the diagonal plus 0 - again so we minimize it
             #if its a mismatch, it will be score of the diagonal plus 1 - increasing the distance
-            diagScore = scoreMatrix[i - 1][j - 1] + score
             # calc top
             #same concept for the top, only we specifically use indel here
             top = matrix[i - 1][j] + 1
-            topScore = scoreMatrix[i-1][j] + indel
       
             # calc left
             #same concept for the left, again only using indel here
             left = matrix[i][j - 1] + 1
-            leftScore = scoreMatrix[i][j-1] + indel
 
             matrix[i][j] = min(top, left, diagonal)
             #like the matrix we had, we calculate the minmimum to minmize the distance and then put that value in for the matrix
-            scoreMatrix[i][j] = min(diagScore, topScore, leftScore)
 
             j += 1
 
         i += 1
         j = 1
 
-    print scoreMatrix
     process_result(seq_1, seq_2, matrix)
 
 
@@ -245,7 +234,11 @@ def process_result(seq_1, seq_2, matrix):
     elif len(align_2) > len(align_1):
         align_1 = ((len(align_2) - len(align_1)) * '-') + align_1
 
+    
     print_result(align_1, align_2)
+
+
+
 
 
 def print_result(align_1, align_2):
@@ -282,8 +275,55 @@ def print_result(align_1, align_2):
     print index_str[printed : length]
     print align_2[printed : length]
     print "{0}({1}/{2})".format((length - printed) * '=', score, length)
-    print
+    distMatrix(align_1, align_2)
 
+
+
+def distMatrix(align_1, align_2):
+    i = 0
+    j = 0
+
+    #says here that we should use a 'normal scoring for global' for the distance matrix here - https://piazza.com/class/iynxmxbzwq35lz?cid=26
+
+    score = 0
+    match = 0
+    mismatch = 1
+    indel = 1
+    #we create an array according to the lengths of the alignments
+    scoreMatrix = numpy.zeros((len(align_1), len(align_2)))
+
+    #we fill the array with the placeholder values
+    while i < len(align_1):
+        scoreMatrix[0][i] = i
+        i += 1
+
+    i = 0
+    while i < len(align_2):
+        scoreMatrix[i][0] = i
+        i += 1
+
+    i = 1
+    j = 1
+    while i < len(align_2):
+        while j < len(align_1):
+            #if there is a match, the score is equivalent to the match 
+            if align_1[j] == align_2[i]:
+                score = match
+            else:
+                #if its not there is a mismatch
+                score = mismatch
+            #like above, we need to take the minimum - we want the smallest possible distance
+            #the hw3 file on moodle says something about have everything be a value of less than 1
+            #but he has us using a different scoring metric in that piazza post
+            #note: this is somewhat similar to the APSP problem 
+            diagScore = scoreMatrix[i-1][j-1] + score
+            topScore = scoreMatrix[i-1][j] + indel
+            leftScore = scoreMatrix[i][j-1] + indel
+            scoreMatrix[i][j] = min(diagScore, topScore, leftScore)
+            j+=1
+        i+=1
+        j = 1
+    print scoreMatrix
 
 if __name__ == "__main__":
     main()
