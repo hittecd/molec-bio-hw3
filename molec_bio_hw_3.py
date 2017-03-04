@@ -266,13 +266,19 @@ def calculate_global_distance(seq_1, seq_2, matrix):
 
 
 def print_alignments():
+    print "Global Alignments for all Sequence Pairs:"
+    print
+
     for align_result in alignment_list:
         print_alignment(align_result)
 
     print
+    print
 
 
 def print_alignment(align_result):
+    print "{0} vs. {1}".format(align_result.seq_1.name, align_result.seq_2.name)
+
     distance = align_result.distance
     length = align_result.length
     align_1 = align_result.align_1
@@ -307,9 +313,13 @@ def print_alignment(align_result):
     print index_str[printed : length]
     print align_2[printed : length]
     print "{0}({1}/{2})".format((length - printed) * '=', distance, length)
+    print
 
 
 def print_distance_matrix():
+    print "Distance Matrix for all Sequences:"
+    print
+
     line = ""
     for row in distance_matrix:
         for column in row:
