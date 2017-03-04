@@ -56,7 +56,6 @@ import numpy
 WIDTH_CONST = 0
 
 sequence_list = []
-alignment_list = []
 distance_matrix = None
 
 
@@ -93,8 +92,6 @@ def main():
     parse_file(args.file)
 
     compute_global_distances()
-
-    print_alignments()
 
     print_distance_matrix()
 
@@ -148,7 +145,12 @@ def compute_global_distances():
 
                 matrix = compute_global_distance_matrix(seq_1, seq_2)
 
-                calculate_global_distance(seq_1, seq_2, matrix)
+                show_alignment = False
+
+                if i % 2 == 0 and j - i == 1:
+                    show_alignment = True
+
+                calculate_global_distance(seq_1, seq_2, matrix, show_alignment)
 
             j += 1
 
@@ -208,7 +210,7 @@ def compute_global_distance_matrix(seq_1, seq_2):
     return matrix
 
 
-def calculate_global_distance(seq_1, seq_2, matrix):
+def calculate_global_distance(seq_1, seq_2, matrix, show_alignment=False):
     seq_data_1 = seq_1.seq_data
     seq_data_2 = seq_2.seq_data
 
@@ -261,19 +263,8 @@ def calculate_global_distance(seq_1, seq_2, matrix):
 
     distance_matrix[seq_1.id][seq_2.id] = round(float(distance)/length, 5)
 
-    if abs(seq_1.id - seq_2.id) == 1 and seq_1.id < seq_2.id:
-        alignment_list.append(GlobalAlignmentResult(seq_1, seq_2, distance, length, align_1, align_2))
-
-
-def print_alignments():
-    print "Global Alignments for all Sequence Pairs:"
-    print
-
-    for align_result in alignment_list:
-        print_alignment(align_result)
-
-    print
-    print
+    if show_alignment:
+        print_alignment(GlobalAlignmentResult(seq_1, seq_2, distance, length, align_1, align_2))
 
 
 def print_alignment(align_result):
