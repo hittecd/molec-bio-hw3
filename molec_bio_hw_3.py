@@ -52,19 +52,30 @@
 
 import argparse
 import numpy
-import scipy
-from scipy import spatial
-import time
 
 WIDTH_CONST = 0
 
 sequence_list = []
+alignment_list = []
+distance_matrix = None
 
 
 class Sequence:
-    def __init__(self, name):
+    def __init__(self, id, name):
+        self.id = id
         self.name = name
         self.seq_data = ""
+
+
+class GlobalAlignmentResult:
+    def __init__(self, seq_1, seq_2, distance, length, align_1, align_2):
+        self.seq_1 = seq_1
+        self.seq_2 = seq_2
+        self.distance = distance
+        self.length = length
+        self.align_1 = align_1
+        self.align_2 = align_2
+
 
 #
 #
@@ -81,6 +92,12 @@ def main():
 
     parse_file(args.file)
 
+    compute_global_distances()
+
+    print_alignments()
+
+    print_distance_matrix()
+
 
 #
 #
@@ -88,17 +105,19 @@ def main():
 def parse_file(file):
     read_sequences(file)
 
-    compute_global_distances()
+    global distance_matrix
+    distance_matrix = numpy.zeros((len(sequence_list), len(sequence_list)))
 
 
 #
 #
 #
 def read_sequences(file):
-    line = file.readline()
+    id = 0
 
+    line = file.readline()
     while line != '' and line[0] == '>':
-        new_sequence = Sequence(line[1:-1])
+        new_sequence = Sequence(id, line[1:-1])
         sequence_list.append(new_sequence)
 
         seq_data = ""
@@ -109,71 +128,64 @@ def read_sequences(file):
 
         new_sequence.seq_data = seq_data
 
+        id += 1
+
 
 #
 #
 #
 def compute_global_distances():
     i = 0
-    j = 1
+    j = 0
 
-    while j < len(sequence_list):
+    while i < len(sequence_list):
         seq_1 = sequence_list[i]
-        seq_2 = sequence_list[j]
 
-        compute_global_distance(seq_1, seq_2)
+        while j < len(sequence_list):
 
-        i += 2
-        j += 2
+            if j != i:
+                seq_2 = sequence_list[j]
+
+                matrix = compute_global_distance_matrix(seq_1, seq_2)
+
+                calculate_global_distance(seq_1, seq_2, matrix)
+
+            j += 1
+
+        j = 0
+        i += 1
 
 
 #
 #
 #
-def compute_global_distance(s_seq_1, s_seq_2):
+def compute_global_distance_matrix(seq_1, seq_2):
+    seq_data_1 = ' ' + seq_1.seq_data
+    seq_data_2 = ' ' + seq_2.seq_data
 
-    seq_1 = ' ' + s_seq_1.seq_data
-    seq_2 = ' ' + s_seq_2.seq_data
-
-    '''
-    if len(seq_1) > len(seq_2):
-        i = len(seq_1) - len(seq_2)
-        seq_2 += (i * '-')
-    elif len(seq_1) < len(seq_2):
-        i = len(seq_2) - len(seq_1)
-        seq_1 += (i * '-')
-    '''
-
-    matrix = numpy.zeros((len(seq_2), len(seq_1)))
-
-    score = 0
-    match = 0
-    indel = 1
-    mismatch = 1
+    matrix = numpy.zeros((len(seq_data_2), len(seq_data_1)))
 
     i = 0
-    while i < len(seq_1):
+    while i < len(seq_data_1):
         matrix[0][i] = i
         i += 1
 
     i = 0
-    while i < len(seq_2):
+    while i < len(seq_data_2):
         matrix[i][0] = i
         i += 1
    
     i = 1
     j = 1
-    while i < len(seq_2):
-        while j < len(seq_1):
+    while i < len(seq_data_2):
+        while j < len(seq_data_1):
 
             # calc diagonal
             #if characters are aligned, we say its a match and give it a score of 0 so we can minimize it
             #if characters arent aligned we say its a mismatch so that we increase the distance
             diagonal = matrix[i - 1][j - 1]
-            if seq_1[j] != seq_2[i]:
+            if seq_data_1[j] != seq_data_2[i]:
                 diagonal += 1
-            elif seq_1[j] == seq_2[i]:
-                k = 4
 
             #if its a match we will have a score of the diagonal plus 0 - again so we minimize it
             #if its a mismatch, it will be score of the diagonal plus 1 - increasing the distance
@@ -193,64 +205,84 @@ def compute_global_distance(s_seq_1, s_seq_2):
         i += 1
         j = 1
 
-    process_result(seq_1, seq_2, matrix)
+    return matrix
 
 
-def process_result(seq_1, seq_2, matrix):
+def calculate_global_distance(seq_1, seq_2, matrix):
+    seq_data_1 = seq_1.seq_data
+    seq_data_2 = seq_2.seq_data
+
     align_1 = ""
     align_2 = ""
 
-    i = len(seq_2) - 1
-    j = len(seq_1) - 1
+    i = len(seq_data_2) - 1
+    j = len(seq_data_1) - 1
     while i > 0 and j > 0:
         u = matrix[i - 1][j]
         l = matrix[i][j - 1]
         d = matrix[i - 1][j - 1]
 
         if d <= l and d <= u:
-            align_1 = seq_1[j] + align_1
-            align_2 = seq_2[i] + align_2
+            align_1 = seq_data_1[j] + align_1
+            align_2 = seq_data_2[i] + align_2
             i -= 1
             j -= 1
         elif l <= u:
-            align_1 = seq_1[j] + align_1
+            align_1 = seq_data_1[j] + align_1
             align_2 = '-' + align_2
             j -= 1
         else:
             align_1 = '-' + align_1
-            align_2 = seq_2[i] + align_2
+            align_2 = seq_data_2[i] + align_2
             i -= 1
 
-    while j > 0:
-        align_1 = seq_1[j] + align_1
+    while j >= 0:
+        align_1 = seq_data_1[j] + align_1
         j -= 1
 
-    while i > 0:
-        align_2 = seq_2[i] + align_2
+    while i >= 0:
+        align_2 = seq_data_2[i] + align_2
         i -= 1
 
     if len(align_1) > len(align_2):
         align_2 = ((len(align_1) - len(align_2)) * '-') + align_2
     elif len(align_2) > len(align_1):
         align_1 = ((len(align_2) - len(align_1)) * '-') + align_1
-
     
-    print_result(align_1, align_2)
-
-
-
-
-
-def print_result(align_1, align_2):
+    distance = 0
     length = len(align_1)
 
+    i = 0
+    while i < length:
+        if align_1[i] != align_2[i]:
+            distance += 1
+
+        i += 1
+
+    distance_matrix[seq_1.id][seq_2.id] = round(float(distance)/length, 5)
+
+    if abs(seq_1.id - seq_2.id) == 1 and seq_1.id < seq_2.id:
+        alignment_list.append(GlobalAlignmentResult(seq_1, seq_2, distance, length, align_1, align_2))
+
+
+def print_alignments():
+    for align_result in alignment_list:
+        print_alignment(align_result)
+
+    print
+
+
+def print_alignment(align_result):
+    distance = align_result.distance
+    length = align_result.length
+    align_1 = align_result.align_1
+    align_2 = align_result.align_2
+
     index_str = ""
-    score = 0
 
     i = 0
     while i < length:
         if align_1[i] == align_2[i] and align_1[i] != '-':
-            score += 1
             index_str += '|'
         else:
             index_str += ' '
@@ -274,56 +306,18 @@ def print_result(align_1, align_2):
     print align_1[printed : length]
     print index_str[printed : length]
     print align_2[printed : length]
-    print "{0}({1}/{2})".format((length - printed) * '=', score, length)
-    distMatrix(align_1, align_2)
+    print "{0}({1}/{2})".format((length - printed) * '=', distance, length)
 
 
+def print_distance_matrix():
+    line = ""
+    for row in distance_matrix:
+        for column in row:
+            line += "{0:.5f} ".format(round(column, 5))
 
-def distMatrix(align_1, align_2):
-    i = 0
-    j = 0
+        print line
+        line = ""
 
-    #says here that we should use a 'normal scoring for global' for the distance matrix here - https://piazza.com/class/iynxmxbzwq35lz?cid=26
-
-    score = 0
-    match = 0
-    mismatch = 1
-    indel = 1
-    #we create an array according to the lengths of the alignments
-    scoreMatrix = numpy.zeros((len(align_1), len(align_2)))
-
-    #we fill the array with the placeholder values
-    while i < len(align_1):
-        scoreMatrix[0][i] = i
-        i += 1
-
-    i = 0
-    while i < len(align_2):
-        scoreMatrix[i][0] = i
-        i += 1
-
-    i = 1
-    j = 1
-    while i < len(align_2):
-        while j < len(align_1):
-            #if there is a match, the score is equivalent to the match 
-            if align_1[j] == align_2[i]:
-                score = match
-            else:
-                #if its not there is a mismatch
-                score = mismatch
-            #like above, we need to take the minimum - we want the smallest possible distance
-            #the hw3 file on moodle says something about have everything be a value of less than 1
-            #but he has us using a different scoring metric in that piazza post
-            #note: this is somewhat similar to the APSP problem 
-            diagScore = scoreMatrix[i-1][j-1] + score
-            topScore = scoreMatrix[i-1][j] + indel
-            leftScore = scoreMatrix[i][j-1] + indel
-            scoreMatrix[i][j] = min(diagScore, topScore, leftScore)
-            j+=1
-        i+=1
-        j = 1
-    print scoreMatrix
 
 if __name__ == "__main__":
     main()
