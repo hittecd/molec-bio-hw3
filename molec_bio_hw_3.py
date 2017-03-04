@@ -154,8 +154,8 @@ def compute_global_distances():
 
             j += 1
 
-        j = 0
         i += 1
+        j = i
 
 
 #
@@ -262,6 +262,7 @@ def calculate_global_distance(seq_1, seq_2, matrix, show_alignment=False):
         i += 1
 
     distance_matrix[seq_1.id][seq_2.id] = round(float(distance)/length, 5)
+    distance_matrix[seq_2.id][seq_1.id] = round(float(distance) / length, 5)
 
     if show_alignment:
         print_alignment(GlobalAlignmentResult(seq_1, seq_2, distance, length, align_1, align_2))
