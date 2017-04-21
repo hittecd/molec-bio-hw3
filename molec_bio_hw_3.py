@@ -222,7 +222,16 @@ def calculate_global_distance(seq_1, seq_2, matrix, show_alignment=False):
         d = matrix[m_i - 1][m_j - 1]
 
         #if the diagonal is at least less than or equal to both the left and top values, we choose the diagonal for our value as it represents a match between the two sequences
-        if d <= l and d <= u:
+        if (seq_data_1[s_i] == seq_data_2[s_j]) and d <= l + 1 and d <= u + 1:
+            align_1 = seq_data_1[s_i] + align_1
+            align_2 = seq_data_2[s_j] + align_2
+            s_i -= 1
+            s_j -= 1
+
+            m_i -= 1
+            m_j -= 1
+
+        elif d <= l and d <= u:
             align_1 = seq_data_1[s_i] + align_1
             align_2 = seq_data_2[s_j] + align_2
             s_i -= 1
@@ -246,24 +255,6 @@ def calculate_global_distance(seq_1, seq_2, matrix, show_alignment=False):
             s_i -= 1
 
             m_i -= 1
-
-    '''
-    #if we reach the end of the first sequence we append the end of the sequence to the alignment here
-    while s_j >= 0:
-        align_1 = seq_data_1[s_j] + align_1
-        s_j -= 1
-
-    #if we reach the end of the second sequence we append the end of the sequence to the alignment here
-    while s_i >= 0:
-        align_2 = seq_data_2[s_i] + align_2
-        s_i -= 1
-
-    #we compare the lengths of the alignments here - if one is longer than the other, we correct it so that it will align properly
-    if len(align_1) > len(align_2):
-        align_2 = ((len(align_1) - len(align_2)) * '-') + align_2
-    elif len(align_2) > len(align_1):
-        align_1 = ((len(align_2) - len(align_1)) * '-') + align_1
-    '''
     
     distance = 0
     length = len(align_1)
