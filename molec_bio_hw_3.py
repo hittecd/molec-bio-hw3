@@ -149,33 +149,33 @@ def compute_global_distances():
 def compute_global_distance_matrix(seq_1, seq_2):
     #here we begin building our scoring matrix to calculate the alignment, initialize the data from the sequences
     #that we have in the sequence class
-    seq_data_1 = ' ' + seq_1.seq_data
-    seq_data_2 = ' ' + seq_2.seq_data
+    seq_data_1 = seq_1.seq_data
+    seq_data_2 = seq_2.seq_data
     #we initialize a matrix to the size of the sequences
-    matrix = numpy.zeros((len(seq_data_2), len(seq_data_1)))
+    matrix = numpy.zeros((len(seq_data_1) + 1, len(seq_data_2) + 1))
 
     #for the top row and column, we initialize their values according to the standard scoring system for glbobal alignment
     i = 0
-    while i < len(seq_data_1):
-        matrix[0][i] = i
+    while i <= len(seq_data_1):
+        matrix[i][0] = i
         i += 1
 
     i = 0
-    while i < len(seq_data_2):
-        matrix[i][0] = i
+    while i <= len(seq_data_2):
+        matrix[0][i] = i
         i += 1
    
    #we begin to iterate through the matrix to calculate our alignment. as is standard, we try to look for diagonal matches if possible
     i = 1
     j = 1
-    while i < len(seq_data_2):
-        while j < len(seq_data_1):
+    while i <= len(seq_data_1):
+        while j <= len(seq_data_2):
 
             # calc diagonal
             #if characters are aligned, we say its a match and give it a score of 0 so we can minimize it
             #if characters arent aligned we say its a mismatch so that we increase the distance
             diagonal = matrix[i - 1][j - 1]
-            if seq_data_1[j] != seq_data_2[i]:
+            if seq_data_1[i - 1] != seq_data_2[j - 1]:
                 diagonal += 1
 
             #if its a match we will have a score of the diagonal plus 0 - again so we minimize it
@@ -203,47 +203,67 @@ def calculate_global_distance(seq_1, seq_2, matrix, show_alignment=False):
     #again, we associate the sequences with the sequences in the Sequence class
     seq_data_1 = seq_1.seq_data
     seq_data_2 = seq_2.seq_data
+
     #we initialize our alignment strings
     align_1 = ""
     align_2 = ""
+
     #we get the length of the sequences here to properly iterate through the matrix. we will use a backtrace through the matrix
-    i = len(seq_data_2) - 1
-    j = len(seq_data_1) - 1
-    while i > 0 and j > 0:
+    s_i = len(seq_data_1) - 1
+    s_j = len(seq_data_2) - 1
+
+    m_i = len(seq_data_1)
+    m_j = len(seq_data_2)
+
+    while m_i > 0 or m_j > 0:
         #we take the values from three directions, above, left, diagonal. We are looking for the minimum here, and will choose from these values below
-        u = matrix[i - 1][j]
-        l = matrix[i][j - 1]
-        d = matrix[i - 1][j - 1]
+        u = matrix[m_i - 1][m_j]
+        l = matrix[m_i][m_j - 1]
+        d = matrix[m_i - 1][m_j - 1]
+
         #if the diagonal is at least less than or equal to both the left and top values, we choose the diagonal for our value as it represents a match between the two sequences
         if d <= l and d <= u:
-            align_1 = seq_data_1[j] + align_1
-            align_2 = seq_data_2[i] + align_2
-            i -= 1
-            j -= 1
+            align_1 = seq_data_1[s_i] + align_1
+            align_2 = seq_data_2[s_j] + align_2
+            s_i -= 1
+            s_j -= 1
+
+            m_i -= 1
+            m_j -= 1
+
         #if the left side is greater than the diagonal but less then the top, we choose the left side for our value, and it represents a gap in the second sequence
         elif l <= u:
-            align_1 = seq_data_1[j] + align_1
-            align_2 = '-' + align_2
-            j -= 1
+            align_1 = '-' + align_1
+            align_2 = seq_data_2[s_j] + align_2
+            s_j -= 1
+
+            m_j -= 1
+
         #if the top is smaller then the left and the right, we choose the top and it also represents a gap in the first sequence
         else:
-            align_1 = '-' + align_1
-            align_2 = seq_data_2[i] + align_2
-            i -= 1
+            align_1 = seq_data_1[s_i] + align_1
+            align_2 = '-' + align_2
+            s_i -= 1
+
+            m_i -= 1
+
+    '''
     #if we reach the end of the first sequence we append the end of the sequence to the alignment here
-    while j >= 0:
-        align_1 = seq_data_1[j] + align_1
-        j -= 1
+    while s_j >= 0:
+        align_1 = seq_data_1[s_j] + align_1
+        s_j -= 1
+
     #if we reach the end of the second sequence we append the end of the sequence to the alignment here
-    while i >= 0:
-        align_2 = seq_data_2[i] + align_2
-        i -= 1
+    while s_i >= 0:
+        align_2 = seq_data_2[s_i] + align_2
+        s_i -= 1
 
     #we compare the lengths of the alignments here - if one is longer than the other, we correct it so that it will align properly
     if len(align_1) > len(align_2):
         align_2 = ((len(align_1) - len(align_2)) * '-') + align_2
     elif len(align_2) > len(align_1):
         align_1 = ((len(align_2) - len(align_1)) * '-') + align_1
+    '''
     
     distance = 0
     length = len(align_1)
@@ -255,6 +275,7 @@ def calculate_global_distance(seq_1, seq_2, matrix, show_alignment=False):
             distance += 1
 
         i += 1
+
     #we build the distance matrix here. the formula is the mismatches/length, portrayed here as distance/length
     #e compare each sequence to every other sequence, using only the top half of the matrix
     #we do not need to use the full matrix, as the top half/bottom half of the matrix are simply mirrored across the diagonal
